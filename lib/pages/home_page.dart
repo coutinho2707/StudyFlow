@@ -3,6 +3,8 @@ import '../theme/app_theme.dart';
 import '../database/database_helper.dart';
 import '../models/task.dart';
 import '../widgets/task_card.dart';
+import '../services/photo_service.dart';
+import '../widgets/word_lookup_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -23,7 +25,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    loadTasks(); // 🔥 atualiza quando volta pra tela
+    loadTasks();
   }
 
   void loadTasks() async {
@@ -31,6 +33,35 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       tasks = data;
     });
+  }
+
+  Future<void> _toggleTask(Task t) async {
+    if (!t.done) {
+      final photoPath = await PhotoService.captureProofPhoto(t.id!);
+      if (photoPath == null) return;
+
+      await DatabaseHelper.instance.updateTask(Task(
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        done: true,
+        tag: t.tag,
+        tagType: t.tagType,
+        photoPath: photoPath,
+      ));
+    } else {
+      await PhotoService.deleteProofPhoto(t.photoPath);
+      await DatabaseHelper.instance.updateTask(Task(
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        done: false,
+        tag: t.tag,
+        tagType: t.tagType,
+        photoPath: null,
+      ));
+    }
+    loadTasks();
   }
 
   @override
@@ -51,7 +82,6 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// 👋 HEADER
               const Text(
                 "Olá, Gabriel",
                 style: TextStyle(
@@ -62,7 +92,6 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 20),
 
-              /// 📊 PROGRESSO
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -97,7 +126,6 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 20),
 
-              /// 📈 CARDS RESUMO
               Row(
                 children: [
                   Expanded(
@@ -118,7 +146,65 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 20),
 
-              /// 📋 PRÓXIMAS TAREFAS
+              GestureDetector(
+                onTap: () => showWordLookupDialog(context),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentGlow,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.menu_book_rounded,
+                          color: AppTheme.accent2,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Caixa de dúvidas",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              "Tem dúvida sobre uma palavra? Toque para buscar.",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppTheme.textTertiary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
@@ -142,19 +228,7 @@ class _HomePageState extends State<HomePage> {
 
               ...nextTasks.map((t) => TaskCard(
                 task: t,
-                onTap: () async {
-                  final updated = Task(
-                    id: t.id,
-                    title: t.title,
-                    description: t.description,
-                    done: !t.done,
-                    tag: t.tag,
-                    tagType: t.tagType,
-                  );
-
-                  await DatabaseHelper.instance.updateTask(updated);
-                  loadTasks();
-                },
+                onTap: () => _toggleTask(t),
               )),
             ],
           ),

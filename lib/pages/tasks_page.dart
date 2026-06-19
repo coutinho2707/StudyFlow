@@ -3,6 +3,7 @@ import '../theme/app_theme.dart';
 import '../widgets/task_card.dart';
 import '../models/task.dart';
 import '../database/database_helper.dart';
+import '../services/photo_service.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key});
@@ -28,21 +29,37 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   void toggleTask(Task task) async {
-    final updated = Task(
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      done: !task.done,
-      tag: task.tag,
-      tagType: task.tagType,
-    );
+    if (!task.done) {
+      final photoPath = await PhotoService.captureProofPhoto(task.id!);
+      if (photoPath == null) return;
 
-    await DatabaseHelper.instance.updateTask(updated);
+      await DatabaseHelper.instance.updateTask(Task(
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        done: true,
+        tag: task.tag,
+        tagType: task.tagType,
+        photoPath: photoPath,
+      ));
+    } else {
+      await PhotoService.deleteProofPhoto(task.photoPath);
+      await DatabaseHelper.instance.updateTask(Task(
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        done: false,
+        tag: task.tag,
+        tagType: task.tagType,
+        photoPath: null,
+      ));
+    }
     loadTasks();
   }
 
-  void deleteTask(int id) async {
-    await DatabaseHelper.instance.deleteTask(id);
+  void deleteTask(Task task) async {
+    await PhotoService.deleteProofPhoto(task.photoPath);
+    await DatabaseHelper.instance.deleteTask(task.id!);
     loadTasks();
   }
 
@@ -136,6 +153,7 @@ class _TasksPageState extends State<TasksPage> {
                   done: task.done,
                   tag: task.tag,
                   tagType: task.tagType,
+                  photoPath: task.photoPath,
                 );
 
                 await DatabaseHelper.instance.updateTask(updated);
@@ -196,7 +214,7 @@ class _TasksPageState extends State<TasksPage> {
                         (t) => Dismissible(
                       key: Key(t.id.toString()),
                       direction: DismissDirection.endToStart,
-                      onDismissed: (_) => deleteTask(t.id!),
+                      onDismissed: (_) => deleteTask(t),
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
@@ -223,7 +241,7 @@ class _TasksPageState extends State<TasksPage> {
                         (t) => Dismissible(
                       key: Key(t.id.toString()),
                       direction: DismissDirection.endToStart,
-                      onDismissed: (_) => deleteTask(t.id!),
+                      onDismissed: (_) => deleteTask(t),
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),

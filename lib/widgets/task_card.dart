@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../theme/app_theme.dart';
@@ -64,6 +65,25 @@ class TaskCard extends StatelessWidget {
                   ),
                 ),
 
+                if (task.photoPath != null && task.photoPath!.isNotEmpty) ...[
+                  GestureDetector(
+                    onTap: () => _showProofPhoto(context, task.photoPath!),
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.border2),
+                        image: DecorationImage(
+                          image: FileImage(File(task.photoPath!)),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
                 if (task.tag != null && task.tag!.isNotEmpty)
                   _buildTag(),
               ],
@@ -94,6 +114,42 @@ class TaskCard extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: AppTheme.border2, width: 1.5),
       ),
+    );
+  }
+
+  void _showProofPhoto(BuildContext context, String path) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.file(File(path), fit: BoxFit.contain),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, size: 18, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

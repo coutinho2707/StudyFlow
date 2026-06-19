@@ -20,8 +20,9 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -33,9 +34,17 @@ class DatabaseHelper {
         description TEXT,
         done INTEGER,
         tag TEXT,
-        tagType TEXT       
+        tagType TEXT,
+        photoPath TEXT
       )
     ''');
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+
+      await db.execute('ALTER TABLE tasks ADD COLUMN photoPath TEXT');
+    }
   }
 
   Future<int> insertTask(Task task) async {

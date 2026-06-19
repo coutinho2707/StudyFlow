@@ -5,6 +5,7 @@ class Task {
   final bool done;
   final String? tag;
   final String? tagType;
+  final String? photoPath;
 
   Task({
     this.id,
@@ -13,6 +14,7 @@ class Task {
     required this.done,
     this.tag,
     this.tagType,
+    this.photoPath,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +25,7 @@ class Task {
       'done': done ? 1 : 0,
       'tag': tag,
       'tagType': tagType,
+      'photoPath': photoPath,
     };
   }
 
@@ -34,6 +37,7 @@ class Task {
       done: map['done'] == 1,
       tag: map['tag'],
       tagType: map['tagType'],
+      photoPath: map['photoPath'],
     );
   }
 }
